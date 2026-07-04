@@ -17,6 +17,7 @@ var upgrader = websocket.Upgrader{
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
+	// Upgrade HTTP -> WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Error.Println(err)
@@ -26,6 +27,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info.Printf("New client: %s\n", r.RemoteAddr)
 
+	// Connect ke backend SSH
 	tcp, err := dialBackend(s.cfg.Backend)
 	if err != nil {
 		logger.Error.Println(err)
@@ -33,6 +35,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tcp.Close()
 
+	// Jalankan proxy dua arah
 	done := make(chan struct{}, 2)
 
 	go func() {
@@ -45,5 +48,6 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		done <- struct{}{}
 	}()
 
+	// Tunggu salah satu koneksi selesai
 	<-done
 }
