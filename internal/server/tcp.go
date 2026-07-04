@@ -1,26 +1,66 @@
 package server
 
 import (
+	"io"
 	"net"
-	"time"
+
+	"github.com/coder/websocket"
 )
 
-func dialBackend(addr string) (net.Conn, error) {
+func copyTCPToWS(ws *websocket.Conn, tcp net.Conn) error {
 
-	conn, err := net.DialTimeout(
-		"tcp",
-		addr,
-		10*time.Second,
-	)
-	if err != nil {
-		return nil, err
+	buf := make([]byte, 32*1024)
+
+	for {
+
+		n, err := tcp.Read(buf)
+		if err != nil {
+			return err
+		}
+
+		err = ws.Write(
+			ws.Context(),
+			websocket.MessageBinary,
+			buf[:n],
+		)
+
+		if err != nil {
+			return err
+		}
+
 	}
 
-	if tcp, ok := conn.(*net.TCPConn); ok {
-		tcp.SetKeepAlive(true)
-		tcp.SetKeepAlivePeriod(30 * time.Second)
-		tcp.SetNoDelay(true)
+}
+
+func copyWSToTCP(ws *websocket.Conn, tcp net.Conn) error {
+
+	for {
+
+		_, data, err := ws.Read(ws.Context())
+		if err != nil {
+			return err
+		}
+
+		_, err = tcp.Write(data)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	return conn, nil
+}
+
+func relay(ws *websocket.Conn, tcp net.Conn) {
+
+	done := make(chan error, 2)
+
+	go func() {
+		done <- copyTCPToWS(ws, tcp)
+	}()
+
+	go func() {
+		done <- copyWSToTCP(ws, tcp)
+	}()
+
+	<-done
 }
