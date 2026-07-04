@@ -7,7 +7,6 @@ import (
 )
 
 func copyTCPToWS(ws *websocket.Conn, tcp net.Conn) {
-
 	buf := make([]byte, 32*1024)
 
 	for {
@@ -23,7 +22,6 @@ func copyTCPToWS(ws *websocket.Conn, tcp net.Conn) {
 }
 
 func copyWSToTCP(ws *websocket.Conn, tcp net.Conn) {
-
 	for {
 		_, data, err := ws.ReadMessage()
 		if err != nil {
@@ -37,7 +35,6 @@ func copyWSToTCP(ws *websocket.Conn, tcp net.Conn) {
 }
 
 func relay(ws *websocket.Conn, tcp net.Conn) {
-
 	done := make(chan struct{}, 2)
 
 	go func() {
