@@ -19,7 +19,7 @@ func New(cfg *config.Config) *Server {
 	}
 }
 
-func (s *Server) routes() {
+func (s *Server) routes(http.HandleFunc(s.cfg.Path, s.handleWebSocket) {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -42,7 +42,30 @@ func (s *Server) routes() {
 }
 
 func (s *Server) Start() error {
+func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logger.Error.Println(err)
+		return
+	}
+
+	defer conn.Close()
+
+	logger.Info.Println("New WebSocket:", r.RemoteAddr)
+
+	for {
+
+		mt, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		if err := conn.WriteMessage(mt, msg); err != nil {
+			break
+		}
+	}
+}
 	s.routes()
 
 	logger.Info.Println("===================================")
