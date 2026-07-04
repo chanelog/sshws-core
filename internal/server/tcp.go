@@ -1,65 +1,53 @@
 package server
 
 import (
-	"io"
 	"net"
 
-	"github.com/coder/websocket"
+	"github.com/gorilla/websocket"
 )
 
-func copyTCPToWS(ws *websocket.Conn, tcp net.Conn) error {
+func copyTCPToWS(ws *websocket.Conn, tcp net.Conn) {
 
 	buf := make([]byte, 32*1024)
 
 	for {
-
 		n, err := tcp.Read(buf)
 		if err != nil {
-			return err
+			return
 		}
 
-		err = ws.Write(
-			ws.Context(),
-			websocket.MessageBinary,
-			buf[:n],
-		)
-
-		if err != nil {
-			return err
+		if err := ws.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
+			return
 		}
-
 	}
-
 }
 
-func copyWSToTCP(ws *websocket.Conn, tcp net.Conn) error {
+func copyWSToTCP(ws *websocket.Conn, tcp net.Conn) {
 
 	for {
-
-		_, data, err := ws.Read(ws.Context())
+		_, data, err := ws.ReadMessage()
 		if err != nil {
-			return err
+			return
 		}
 
-		_, err = tcp.Write(data)
-		if err != nil {
-			return err
+		if _, err := tcp.Write(data); err != nil {
+			return
 		}
-
 	}
-
 }
 
 func relay(ws *websocket.Conn, tcp net.Conn) {
 
-	done := make(chan error, 2)
+	done := make(chan struct{}, 2)
 
 	go func() {
-		done <- copyTCPToWS(ws, tcp)
+		copyTCPToWS(ws, tcp)
+		done <- struct{}{}
 	}()
 
 	go func() {
-		done <- copyWSToTCP(ws, tcp)
+		copyWSToTCP(ws, tcp)
+		done <- struct{}{}
 	}()
 
 	<-done
