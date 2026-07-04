@@ -6,6 +6,7 @@ import (
 
 	"github.com/chanelog/sshws-core/internal/config"
 	"github.com/chanelog/sshws-core/internal/logger"
+	"github.com/gorilla/websocket"
 )
 
 type Server struct {
